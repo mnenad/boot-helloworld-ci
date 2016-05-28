@@ -1,0 +1,42 @@
+---
+resources:
+- name: boot-helloworld
+  type: git
+  source:
+    uri: https://github.com/mnenad/boot-helloworld-ci.git
+    branch: master
+
+- name: pcfdev
+  type: cf
+  source:
+    api: api.run.pivotal.io
+    username: momcilovicnenad@yahoo.com
+    password: <password>
+    organization: Nenad
+    space: dev-man
+    skip_cert_check: true
+
+jobs:
+
+- name: unit-test
+  plan:
+  - get: boot-helloworld
+    trigger: true
+  - task: tests
+    file: boot-helloworld/ci/tasks/unit-test.yml
+
+
+- name: deploy
+  plan:
+  - get: boot-helloworld
+    passed: [ unit-test ]
+    trigger: true
+  - task: package
+    file: boot-helloworld/ci/tasks/package.yml
+  - put: pcfdev
+    attempts: 10
+    params:
+      manifest: package/manifest.yml
+      current_app_name: boot-helloworld
+
+
